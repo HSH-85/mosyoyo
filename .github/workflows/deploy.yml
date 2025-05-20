@@ -44,10 +44,12 @@ jobs:
           echo "$SSH_KEY" > deploy_key.pem
           chmod 600 deploy_key.pem
 
-          # EC2쪽 /app 디렉터리 통째로 초기화 후 생성
+          # EC2에서 /app 초기화: sudo로 지우고, ec2-user 소유로 재생성
           ssh -o StrictHostKeyChecking=no -i deploy_key.pem \
             ec2-user@${{ secrets.EC2_HOST }} \
-            "rm -rf /home/ec2-user/app && mkdir -p /home/ec2-user/app"
+            "sudo rm -rf /home/ec2-user/app \
+             && sudo mkdir -p /home/ec2-user/app \
+             && sudo chown -R ec2-user:ec2-user /home/ec2-user/app"
 
           # 로컬에서 glob 처리하며 재귀 복사
           scp -o StrictHostKeyChecking=no -i deploy_key.pem -r \
@@ -57,7 +59,6 @@ jobs:
             docker-compose.yml \
             .env \
             ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app
-
 
       - name: 🚀 Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
