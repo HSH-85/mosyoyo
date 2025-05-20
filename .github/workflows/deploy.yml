@@ -22,6 +22,8 @@ jobs:
       # React 빌드
       - name: 🛠 Build React
         working-directory: frontend
+        env:
+          CI: false   # <-- 추가
         run: |
           npm ci
           npm run build
