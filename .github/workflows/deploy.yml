@@ -36,8 +36,7 @@ jobs:
           echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
           echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
 
-
-      - name: Debug : tlqkfshadk
+      - name: debug
         run: |
           echo "✅ 확인: backend/build/libs"
           find backend/build/libs || echo "❌ JAR 없음"
