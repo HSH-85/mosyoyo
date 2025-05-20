@@ -24,7 +24,7 @@ jobs:
           export CI=false
           npm ci
           npm run build
-          
+
       - name: ✍️ Generate .env from secrets
         run: |
           echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
@@ -36,6 +36,19 @@ jobs:
           echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
           echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
 
+      - name: 🔍 디버그: 복사 대상 파일 확인
+        run: |
+          echo "✅ backend jar:"
+          ls -al backend/build/libs || echo "❌ JAR 없음"
+
+          echo "✅ frontend build:"
+          ls -al frontend/build || echo "❌ build 없음"
+
+          echo "✅ .env 파일:"
+          ls -al .env || echo "❌ .env 없음"
+
+          echo "✅ docker-compose.yml:"
+          ls -al docker-compose.yml || echo "❌ 없음"
 
       - name: 🚚 Copy app to EC2
         uses: appleboy/scp-action@v0.1.6
