@@ -20,13 +20,13 @@ jobs:
           ./gradlew clean build -x test
 
       # React 빌드
-      - name: 🛠 Build React
+      - name: 🛠 Build React (disable CI to ignore warnings)
         working-directory: frontend
-        env:
-          CI: false   # <-- 추가
         run: |
+          export CI=false
           npm ci
           npm run build
+
 
       # EC2로 파일 복사
       - name: 🚚 Copy app to EC2
