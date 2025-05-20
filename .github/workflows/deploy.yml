@@ -65,6 +65,7 @@ jobs:
           target: /home/ec2-user/app
           strip_components: 0
           rm: true
+          fail_on_empty: false
 
       - name: 🚀 Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
