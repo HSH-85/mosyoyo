@@ -36,20 +36,6 @@ jobs:
           echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
           echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
 
-      - name: debug
-        run: |
-          echo "✅ 확인: backend/build/libs"
-          find backend/build/libs || echo "❌ JAR 없음"
-          
-          echo "✅ 확인: frontend/build"
-          find frontend/build || echo "❌ React 빌드 없음"
-          
-          echo "✅ 확인: .env"
-          cat .env || echo "❌ .env 없음"
-
-          echo "✅ 확인: docker-compose.yml"
-          ls -l docker-compose.yml || echo "❌ 없음"
-
       - name: 🚚 Copy app to EC2
         uses: appleboy/scp-action@v0.1.6
         with:
@@ -57,7 +43,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_KEY }}
           source: |
-            backend/build/libs/*.jar
+            backend/build/libs/msy-0.0.1-SNAPSHOT.jar
             frontend/build/**
             nginx/default.conf
             docker-compose.yml
@@ -65,7 +51,6 @@ jobs:
           target: /home/ec2-user/app
           strip_components: 0
           rm: true
-          fail_on_empty: false
 
       - name: 🚀 Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
