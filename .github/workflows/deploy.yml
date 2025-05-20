@@ -31,11 +31,16 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 🧱 Build Spring Boot JAR
+      - name: 🧪 Run Spring Boot Tests with RDS
         working-directory: backend
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew clean build
+
 
 
 
