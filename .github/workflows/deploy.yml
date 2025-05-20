@@ -37,7 +37,7 @@ jobs:
           echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
 
 
-      - name: 
+      - name: 디버그: 복사 대상 파일 존재 확인
         run: |
           echo "✅ 확인: backend/build/libs"
           find backend/build/libs || echo "❌ JAR 없음"
