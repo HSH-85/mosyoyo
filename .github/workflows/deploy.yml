@@ -40,6 +40,7 @@ jobs:
             frontend/build/**
             nginx/default.conf
             docker-compose.yml
+            .env
           target: /home/ec2-user/app
 
       # EC2에서 Docker Compose 실행
