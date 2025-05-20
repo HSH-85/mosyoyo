@@ -32,9 +32,11 @@ jobs:
           java-version: '17'
 
       - name: 🧱 Build Spring Boot JAR
+        working-directory: backend
         run: |
-          chmod +x backend/gradlew
-          ./backend/gradlew clean build
+          chmod +x gradlew
+          ./gradlew clean build
+
 
 
       - name: 🚀 Copy files to EC2
