@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Docker Compose EC2 Deploy
 
 on:
   push:
@@ -9,57 +9,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: ✅ Checkout Repository
+      - name: ✅ Checkout repository
         uses: actions/checkout@v3
 
-      - name: ✅ Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: 🛠 Build React Frontend
-        working-directory: frontend
-        env:
-          CI: false
-        run: |
-          npm install
-          npm run build
-
-      - name: ☕️ Setup JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: 🧱 Build Spring Boot JAR (skip tests for now)
+      # Spring Boot 빌드 (Docker build용 JAR 필요시)
+      - name: 🧱 Build Spring Boot
         working-directory: backend
         run: |
           chmod +x gradlew
           ./gradlew clean build -x test
 
+      # React 빌드
+      - name: 🛠 Build React
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
 
-
-
-      - name: 🚀 Copy files to EC2
+      # EC2로 파일 복사
+      - name: 🚚 Copy app to EC2
         uses: appleboy/scp-action@v0.1.6
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_KEY }}
           source: |
-            backend/build/libs/*.jar
-            frontend/dist/**
-          target: /home/ec2-user/deploy
+            backend/**
+            frontend/build/**
+            nginx/default.conf
+            docker-compose.yml
+          target: /home/ec2-user/app
 
-      - name: ⚙️ Run Remote Commands on EC2
+      # EC2에서 Docker Compose 실행
+      - name: 🚀 Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            pkill -f 'java -jar' || true
-            nohup java -jar /home/ec2-user/deploy/*.jar > /home/ec2-user/app.log 2>&1 &
-            sudo rm -rf /usr/share/nginx/html/*
-            sudo cp -r /home/ec2-user/deploy/frontend/dist/* /usr/share/nginx/html/
-            sudo systemctl restart nginx
+            cd /home/ec2-user/app
+            docker-compose down
+            docker-compose up -d --build
