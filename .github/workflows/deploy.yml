@@ -27,7 +27,7 @@ jobs:
 
       - name: ✍️ Generate .env from secrets
         run: |
-          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
+          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" > .env
           echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
           echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
           echo "REDIS_HOST=redis" >> .env
@@ -36,27 +36,29 @@ jobs:
           echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
           echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
 
-      - name: 🚚 Copy app to EC2
-        uses: appleboy/scp-action@v0.1.6
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_KEY }}
-          source: |
-            backend/build/libs/*.jar
-            frontend/build/**
-            nginx/default.conf
-            docker-compose.yml
-            .env
-          target: /home/ec2-user/app
-          strip_components: 0
-          rm: true
+      - name: 🚚 Copy files to EC2 via scp
+        env:
+          SSH_KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          # SSH 키 준비
+          echo "$SSH_KEY" > deploy_key.pem
+          chmod 600 deploy_key.pem
+
+          # EC2 디렉토리 생성
+          ssh -o StrictHostKeyChecking=no -i deploy_key.pem \
+              ec2-user@${{ secrets.EC2_HOST }} "mkdir -p /home/ec2-user/app"
+
+          # 파일 전송 (로컬 셸이 glob 처리)
+          scp -o StrictHostKeyChecking=no -i deploy_key.pem \
+            backend/build/libs/*.jar \
+            -r frontend/build nginx/default.conf docker-compose.yml .env \
+            ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app
 
       - name: 🚀 Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          username: ec2-user
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ec2-user/app
