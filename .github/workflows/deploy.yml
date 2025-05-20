@@ -1,0 +1,58 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ✅ Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: ✅ Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 🛠 Build React Frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: ☕️ Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🧱 Build Spring Boot JAR
+        working-directory: backend
+        run: ./gradlew clean build
+
+      - name: 🚀 Copy files to EC2
+        uses: appleboy/scp-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          source: |
+            backend/build/libs/*.jar
+            frontend/dist/**
+          target: /home/ec2-user/deploy
+
+      - name: ⚙️ Run Remote Commands on EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            pkill -f 'java -jar' || true
+            nohup java -jar /home/ec2-user/deploy/*.jar > /home/ec2-user/app.log 2>&1 &
+            sudo rm -rf /usr/share/nginx/html/*
+            sudo cp -r /home/ec2-user/deploy/frontend/dist/* /usr/share/nginx/html/
+            sudo systemctl restart nginx
