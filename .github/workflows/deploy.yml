@@ -36,19 +36,19 @@ jobs:
           echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
           echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
 
-      - name: 🔍 디버그: 복사 대상 파일 확인
+      - name: 🔍 디버그: 복사 대상 파일 존재 확인
         run: |
-          echo "✅ backend jar:"
-          ls -al backend/build/libs || echo "❌ JAR 없음"
+          echo "✅ 확인: backend/build/libs"
+          find backend/build/libs || echo "❌ JAR 없음"
+          
+          echo "✅ 확인: frontend/build"
+          find frontend/build || echo "❌ React 빌드 없음"
+          
+          echo "✅ 확인: .env"
+          cat .env || echo "❌ .env 없음"
 
-          echo "✅ frontend build:"
-          ls -al frontend/build || echo "❌ build 없음"
-
-          echo "✅ .env 파일:"
-          ls -al .env || echo "❌ .env 없음"
-
-          echo "✅ docker-compose.yml:"
-          ls -al docker-compose.yml || echo "❌ 없음"
+          echo "✅ 확인: docker-compose.yml"
+          ls -l docker-compose.yml || echo "❌ 없음"
 
       - name: 🚚 Copy app to EC2
         uses: appleboy/scp-action@v0.1.6
@@ -63,6 +63,8 @@ jobs:
             docker-compose.yml
             .env
           target: /home/ec2-user/app
+          strip_components: 0
+          rm: true
 
       - name: 🚀 Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
@@ -72,5 +74,5 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ec2-user/app
-            docker-compose down
+            docker-compose down || true
             docker-compose up -d --build
