@@ -50,13 +50,12 @@ jobs:
 
           # 파일 전송 (로컬 셸이 glob 처리)
           scp -o StrictHostKeyChecking=no -i deploy_key.pem -r \
-            backend/build/libs/*.jar \
+            backend \
             frontend/build \
             nginx/default.conf \
             docker-compose.yml \
             .env \
             ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app
-
 
       - name: 🚀 Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
