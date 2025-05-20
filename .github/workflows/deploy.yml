@@ -46,13 +46,13 @@ jobs:
 
           # EC2 디렉토리 생성
           ssh -o StrictHostKeyChecking=no -i deploy_key.pem \
-              ec2-user@${{ secrets.EC2_HOST }} "mkdir -p /home/ec2-user/app"
+            ec2-user@${{ secrets.EC2_HOST }} "mkdir -p /home/ec2-user/app"
 
           # 파일 전송 (로컬 셸이 glob 처리)
           scp -o StrictHostKeyChecking=no -i deploy_key.pem -r \
             backend \
             frontend/build \
-            nginx/default.conf \
+            nginx \                # ← nginx 폴더 전체 복사
             docker-compose.yml \
             .env \
             ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app
