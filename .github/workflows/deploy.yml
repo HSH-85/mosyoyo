@@ -19,9 +19,11 @@ jobs:
 
       - name: 🛠 Build React Frontend
         working-directory: frontend
+        env:
+          CI: false
         run: |
           npm install
-          CI=false npm run build
+          npm run build
 
       - name: ☕️ Setup JDK
         uses: actions/setup-java@v3
