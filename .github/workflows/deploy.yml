@@ -32,8 +32,10 @@ jobs:
           java-version: '17'
 
       - name: 🧱 Build Spring Boot JAR
-        working-directory: backend
-        run: ./gradlew clean build
+        run: |
+          chmod +x backend/gradlew
+          ./backend/gradlew clean build
+
 
       - name: 🚀 Copy files to EC2
         uses: appleboy/scp-action@v0.1.6
