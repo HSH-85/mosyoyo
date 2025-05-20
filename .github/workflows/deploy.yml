@@ -52,7 +52,7 @@ jobs:
           scp -o StrictHostKeyChecking=no -i deploy_key.pem -r \
             backend \
             frontend/build \
-            nginx \                # ← nginx 폴더 전체 복사
+            nginx \
             docker-compose.yml \
             .env \
             ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app
