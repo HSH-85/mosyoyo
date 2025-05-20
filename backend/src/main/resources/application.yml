@@ -1,0 +1,78 @@
+server:
+  port: 8080
+  host: http://localhost:8080
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: gjtjdgns@gmail.com         # 너의 Gmail 주소
+    password: nzfi alks ieag jeit      # Gmail 앱 비밀번호
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+  redis:
+    host: localhost
+    port: 6379
+
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET:}
+            client-name: Kakao
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/kakao"
+            scope: profile_nickname, account_email
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_SECRET}
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            scope: profile, email
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+jwt:
+  secret: qwerty1234567890qwerty1234567890abcd
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    s3:
+      bucket: mybukket-app
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false
+
+# 카카오페이 연동용
+kakao:
+  api:
+    rest-key: 1c335e9d6f04820f7a91f3cc0db39e13
+    cid:      ${KAKAO_CID:TC0ONETIME}
+    host:     ${server.host:http://localhost:8081}
+    front-host: http://localhost:3000
