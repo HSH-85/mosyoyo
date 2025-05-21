@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  web:
+    image: my-web
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    # compose up만으로도 제한 걸고 싶다면
+    # 아래 옵션을 사용 (swarm 모드가 아니어도 동작)
+    cpus: 0.5
+    mem_limit: 512m
+  db:
+    image: mysql
+    cpus: 0.5
+    mem_limit: 1g
   backend:
     build: ./backend
     container_name: backend

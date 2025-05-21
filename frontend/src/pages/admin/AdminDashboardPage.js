@@ -56,12 +56,12 @@ const AdminDashboardPage = () => {
   const [facilityCount, setFacilityCount] = useState(0)
   const [userStats, setUserStats] = useState({ totalUsers: 0, dailyGrowth: [] })
   const [stats, setStats] = useState({
-    facilities: { total: 0, approved: 0, pending: 0, rejected: 0 },
-    products:   { total: 0, inStock: 0, outOfStock: 0 },
-    users:      { total: 0, new: 0 },
-    orders:     { total: 0, completed: 0, processing: 0, cancelled: 0 },
-    revenue:    { total: 0, thisMonth: 0, lastMonth: 0 },
-  })
+   facilities: { total: 0, new: 0, approved: 0, pending: 0, rejected: 0 },
+   products:   { total: 0, new: 0, inStock: 0, outOfStock: 0 },
+   users:      { total: 0, new: 0 },
+   orders:     { total: 0, completed: 0, processing: 0, cancelled: 0 },
+   revenue:    { total: 0, thisMonth: 0, lastMonth: 0 },
+ })
 
   // 차트용 데이터
   const [monthlyRevenue, setMonthlyRevenue] = useState([])
@@ -79,13 +79,14 @@ const AdminDashboardPage = () => {
         const token = localStorage.getItem("accessToken") || ""
         const headers = { Authorization: `Bearer ${token}` }
 
-        const [facilityRes, summaryRes, userGrowthRes, saleSummaryRes, popFacRes, popProdRes] = await Promise.all([
+        const [facilityRes, summaryRes, userGrowthRes, saleSummaryRes, popFacRes, popProdRes,totalSummaryRes] = await Promise.all([
           axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard/facility-count`, { headers }),
           axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard/summary`, { headers }),
           axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard/user-daily-growth`, { headers }),
           axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard/sale-summary`, { headers }),
           axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard/popular-facilities`, { headers }),
           axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard/popular-products`,   { headers }),
+          axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard/total-summary`,    { headers }),
         ])
 
         axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard/daily-sales`, { headers })
@@ -101,10 +102,29 @@ const AdminDashboardPage = () => {
             
         setFacilityCount(facilityRes.data)
         const sum = summaryRes.data
+        // ① totalSummaryRes.data 에서 일일 신규 건수 꺼내오기
+        const totalSum = totalSummaryRes.data
+    
+        // ② stats 상태에 total + new 한꺼번에 세팅
         setStats(prev => ({
           ...prev,
-          products: sum.products,
-          users: sum.users,
+          facilities: {
+            ...prev.facilities,
+            total: totalSum.facilities.total,
+            new:   totalSum.facilities.new,
+          },
+          products: {
+            ...prev.products,
+            total:     totalSum.products.total,
+            new:       totalSum.products.new,
+            inStock:   totalSum.products.inStock,
+            outOfStock:totalSum.products.outOfStock,
+          },
+          users: {
+            ...prev.users,
+            total: totalSum.users.total,
+            new:   totalSum.users.new,
+          },
           revenue: {
             total: saleSummaryRes.data.total,
             thisMonth: saleSummaryRes.data.today,
@@ -169,13 +189,20 @@ const dayLabels = Array.from({ length: 7 }).map((_, i) => {
   const d = new Date();
   d.setDate(d.getDate() - (6 - i));              // 6일 전부터 오늘까지
   return `${d.getMonth() + 1}/${d.getDate()}`;   // e.g. "5/14"
-});
+}); 
+
+const salesByDate = dailyRevenue.reduce((acc, { date, amount }) => {
+   const d = new Date(date);
+   const key = `${d.getMonth() + 1}/${d.getDate()}`;  // e.g. "5/14"
+   acc[key] = amount;
+   return acc;
+ }, {});
 
 const revenueChartData = {
   labels: dayLabels,
   datasets: [{
     label: "일별 매출",
-    data: dayLabels.map((_, idx) => dailyRevenue[idx]?.amount || 0),
+    data: dayLabels.map((label) => salesByDate[label] ?? 0),
     borderColor: "#9775FA",
     backgroundColor: (context) => {
       const chart = context.chart;
@@ -239,11 +266,20 @@ const chartOptions = {
     },
   },
 };
+
+const signupByDate = dailyUserGrowth.reduce((acc, { date, count }) => {
+   const d = new Date(date);
+   const key = `${d.getMonth() + 1}/${d.getDate()}`;  // "5/14"
+   acc[key] = count;
+   return acc;
+ }, {});
+
+
 const userChartData = {
   labels: dayLabels,
   datasets: [{
     label: "일별 사용자 증가",
-    data: dayLabels.map((_, i) => dailyUserGrowth[i]?.count || 0),
+    data: dayLabels.map(label => signupByDate[label] ?? 0),
     backgroundColor: "#D0BFFF",  // 💜 라벤더 파스텔
     borderColor: "#9775FA",      // 💜 진한 포인트
     borderWidth: 2,
@@ -320,6 +356,7 @@ const facilityTypeOptions = {
   },
 }
 
+console.log(userChartData)
   return (
     <Layout>
       <div className="admin-dashboard">
@@ -329,7 +366,7 @@ const facilityTypeOptions = {
   <div className="admin-stat-title">시설</div>
   <div className="admin-stat-value">{facilityCount}</div>
   <div className="admin-stat-subinfo">
-    <span>신규(이번 달): {userStats.dailyGrowth.reduce((sum, u) => sum + u.count, 0)}</span>
+    <span>신규(일일): {stats.facilities.new}</span>
   </div>
 
 </div>
@@ -338,7 +375,7 @@ const facilityTypeOptions = {
   <div className="admin-stat-title">상품</div>
   <div className="admin-stat-value">{stats.products.total}</div>
   <div className="admin-stat-subinfo">
-    <span>신규(이번 달): {userStats.dailyGrowth.reduce((sum, u) => sum + u.count, 0)}</span>
+    <span>신규(일일): {stats.products.new}</span>
   </div>
   
  
@@ -348,7 +385,7 @@ const facilityTypeOptions = {
   <div className="admin-stat-title">사용자</div>
   <div className="admin-stat-value">{userStats.totalUsers}</div>
   <div className="admin-stat-subinfo">
-    <span>신규(이번 달): {userStats.dailyGrowth.reduce((sum, u) => sum + u.count, 0)}</span>
+    <span>신규(일일): {stats.users.new}</span>
   </div>
 </div>
 
@@ -357,8 +394,8 @@ const facilityTypeOptions = {
   <div className="admin-stat-title">매출</div>
   <div className="admin-stat-value">{formatCurrency(stats.revenue.total)}</div>
   <div className="admin-stat-subinfo">
-    <span>이번 달: {formatCurrency(stats.revenue.thisMonth)}</span>
-    <span>지난 달: {formatCurrency(stats.revenue.lastMonth)}</span>
+    <span>오늘: {formatCurrency(stats.revenue.thisMonth)}</span>
+    <span>어제: {formatCurrency(stats.revenue.lastMonth)}</span>
   </div>
   <div className="admin-stat-subinfo">
     <span style={{ color: revenueUp ? "#10B981" : "#EF4444" }}>

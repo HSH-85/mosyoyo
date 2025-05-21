@@ -22,10 +22,12 @@ import { useAuth } from "../hooks/use-auth";
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function HomePage() {
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, logout } = useAuth()
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const navigate = useNavigate();
+
+
 
   const handleLogout = () => {
     if (window.confirm("로그아웃 하시겠습니까?")) {
@@ -160,12 +162,18 @@ function HomePage() {
                 <div>상품 로딩 중...</div>
               ) : (
                 products.slice(0, 3).map((product) => {
+                  console.log(product)
+                  const isSoldOut = product.stockQuantity <= 0;
                   const originalPrice = parseInt(product.price.replace(/,/g, ""));
                   const discountPrice = parseInt(product.discountPrice);
                   const discountPercent = product.discount;
 
                   return (
-                    <Link key={product.id} to={`/products/${product.id}`} className="product-card">
+                    <Link 
+                      key={product.id} 
+                      to={`/products/${product.id}`} 
+                      className={`product-card relative ${isSoldOut ? "opacity-50 pointer-events-none" : ""}`}
+                    >
                       <div className="home-product-image-box">
                         <img
                           src={product.images || "/images/placeholder.svg"}
@@ -177,6 +185,12 @@ function HomePage() {
                         <div className="product-name text-base font-medium text-gray-800 truncate">
                           {product.name}
                         </div>
+                        {/* 품절 뱃지 */}
+                        {isSoldOut && (
+                         <span className="absolute top-2 right-2 z-20 bg-red-600 text-white text-sm font-bold uppercase px-3 py-1 rounded-full shadow-md ring-2 ring-white">
+                            품절
+                          </span>
+                        )}
                         {discountPrice ? (
                           <>
                             <div className="text-sm text-gray-400">

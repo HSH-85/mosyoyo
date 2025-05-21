@@ -135,6 +135,21 @@ setProduct(prev => ({
   const addToCart = async () => {
     try {
       const token = localStorage.getItem("accessToken")
+      if(!token){
+        alert("장바구니는 로그인 후 이용 가능합니다.");
+        return;
+      }
+
+      if(product.stockQuantity === 0){
+        alert("재고가 없습니다. 관리자에게 문의하세요.");
+        return;
+      }
+
+      if(product.stockQuantity < quantity){
+        alert("선택하신 수량보다 재고가 부족합니다.\n아래 재고 수량을 확인해주세요.");
+        return;
+      }
+      
       const res = await fetch(`${process.env.REACT_APP_API_URL}/cart`, {
         method: "POST",
         headers: {
@@ -290,11 +305,11 @@ setProduct(prev => ({
         </div>
 
         {/* 재고 */}
-        <h3 className="font-medium mb-2">재고</h3>
+        <h3 className="font-medium mb-2">남은 재고</h3>
         <table className="w-full text-sm mb-4">
           <tbody>
             <tr className="border-b">
-              <td className="py-2">{product.stockQuantity} 남음</td>
+              <td className="py-2">수량 : {product.stockQuantity} </td>
             </tr>
           </tbody>
         </table>
