@@ -83,7 +83,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 User existing = userOpt.get();
                 existing.setOauthId(oauthId);
                 existing.setProvider(providerEnum);
-                existing.setCreatedAt(LocalDateTime.now());
                 return userRepository.save(existing);
             }
         }

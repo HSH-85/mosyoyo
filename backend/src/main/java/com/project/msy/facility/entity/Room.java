@@ -2,19 +2,21 @@ package com.project.msy.facility.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 시설 이미지 Entity
+ * 시설 객실 정보 Entity
  */
 @Entity
-@Table(name = "facility_images")
+@Table(name = "room")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FacilityImage {
+public class Room {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,11 +25,17 @@ public class FacilityImage {
     @JoinColumn(name = "f_id", nullable = false)
     private Facility facility;
 
-    @Column(name = "image_url", columnDefinition = "TEXT", nullable = false)
-    private String imageUrl;
+    @Column(name = "room_type", nullable = false, length = 100)
+    private String roomType;
 
-    @Column(name = "is_main", nullable = false)
-    private Boolean isMain = false;
+    @Column(name = "room_options", length = 255)
+    private String roomOptions;
+
+    @Column(name = "square_meters")
+    private Integer squareMeters;
+
+    @Column(name = "monthly_fee", precision = 10, scale = 2)
+    private BigDecimal monthlyFee;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

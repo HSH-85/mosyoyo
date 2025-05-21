@@ -1,13 +1,14 @@
 package com.project.msy.product.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.project.msy.product.entity.ProductCategory;
+import com.project.msy.product.entity.ProductOrigin;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 상품 Entity
@@ -24,17 +25,17 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 200)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private ProductCategory category;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "discount_price", precision = 15, scale = 2)
+    @Column(name = "discount_price", precision = 10, scale = 2)
     private BigDecimal discountPrice;
 
     @Column(name = "stock_quantity", nullable = false)
@@ -43,40 +44,30 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "shipping_fee", precision = 15, scale = 2)
+    @Column(name = "shipping_fee", precision = 10, scale = 2)
     private BigDecimal shippingFee;
 
-    @Column(length = 255)
+    @Column(length = 100)
     private String manufacturer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "origin_id", nullable = false)
+    @JoinColumn(name = "origin_id")
     private ProductOrigin origin;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Builder.Default
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductFeature> features = new ArrayList<>();
 
-    @Builder.Default
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductSpecification> specifications = new ArrayList<>();
 
-    @Builder.Default
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
 
     @PrePersist
-    public void onCreate() {
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-    }
-
-    @JsonProperty("imageUrls")
-    public List<String> getImageUrls() {
-        return images.stream()
-                .map(ProductImage::getImageUrl)
-                .collect(Collectors.toList());
     }
 }
