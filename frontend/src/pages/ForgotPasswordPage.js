@@ -9,8 +9,6 @@ import { Label } from "../components/ui/Label"
 import axios from "axios"
 import '../styles/ForgotPassword.css'
 
-const API_BASE_URL = process.env.REACT_APP_API_URL
-
 function ForgotPasswordPage() {
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState("")
@@ -22,7 +20,7 @@ function ForgotPasswordPage() {
   const [isCodeSent, setIsCodeSent] = useState(false)
 
   const handleEmailSubmit = async (e) => {
-    if (e) e.preventDefault()
+    e.preventDefault()
     if (!email) {
       setError("이메일을 입력해주세요.")
       return
@@ -30,10 +28,7 @@ function ForgotPasswordPage() {
     setIsLoading(true)
     setError("")
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/forgot-password`,
-        { email }
-      )
+      const response = await axios.post("/api/auth/forgot-password", { email })
       if (response.data.success) {
         setIsCodeSent(true)
         setStep(2)
@@ -57,10 +52,10 @@ function ForgotPasswordPage() {
     setIsLoading(true)
     setError("")
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/verify-reset-code`,
-        { email, code: verificationCode }
-      )
+      const response = await axios.post("/api/auth/verify-reset-code", {
+        email,
+        code: verificationCode,
+      })
       if (response.data.valid) {
         setStep(3)
       } else {
@@ -87,10 +82,11 @@ function ForgotPasswordPage() {
     setIsLoading(true)
     setError("")
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/reset-password`,
-        { email, code: verificationCode, newPassword }
-      )
+      const response = await axios.post("/api/auth/reset-password", {
+        email,
+        code: verificationCode,
+        newPassword,
+      })
       if (response.data.success) {
         setStep(4)
       } else {
@@ -106,6 +102,7 @@ function ForgotPasswordPage() {
 
   return (
     <div className="forgot-container flex flex-col min-h-screen">
+      {/* 헤더 */}
       <header className="forgot-header bg-white border-b">
         <div className="flex items-center px-4 py-3">
           <Link to="/" className="mr-4">
@@ -115,6 +112,7 @@ function ForgotPasswordPage() {
         </div>
       </header>
 
+      {/* 메인 */}
       <main className="forgot-main flex-grow flex items-center justify-center p-4">
         <div className="forgot-card w-full max-w-md">
           {error && (
@@ -157,9 +155,7 @@ function ForgotPasswordPage() {
           {step === 2 && (
             <form onSubmit={handleVerifyCode} className="forgot-form">
               <h2 className="text-xl font-semibold mb-4">인증 코드 확인</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                {email}로 전송된 인증 코드를 입력해주세요.
-              </p>
+              <p className="text-sm text-gray-600 mb-4">{email}로 전송된 인증 코드를 입력해주세요.</p>
 
               <div className="space-y-2">
                 <Label htmlFor="verificationCode">인증 코드</Label>
@@ -181,7 +177,7 @@ function ForgotPasswordPage() {
                   type="button"
                   onClick={() => {
                     setIsCodeSent(false)
-                    handleEmailSubmit()
+                    handleEmailSubmit({ preventDefault: () => {} })
                   }}
                   className="hover:underline"
                 >

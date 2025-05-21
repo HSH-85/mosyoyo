@@ -1,149 +1,196 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import Layout from "../components/Layout"
+import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/Button"
-import Skeleton from "../components/ui/Skeleton"
-import Badge from "../components/ui/Badge"
-import "../styles/AdminInquiriesPage.css"
-import { ChevronLeft } from "lucide-react"
 import { Textarea } from "../components/ui/Textarea"
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
-
+import Badge from "../components/ui/Badge"
+import "../styles/AdminQuestionsDetailPage.css"
 
 const AdminQuestionsDetailPage = () => {
-  const navigate = useNavigate()
   const { id } = useParams()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [question, setQuestion] = useState(null)
-  const [answerContent, setAnswerContent] = useState("")
+  const [answer, setAnswer] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      const token = localStorage.getItem("accessToken")
-      if (!token) return navigate("/login")
+    const fetchQuestion = async () => {
+      setIsLoading(true)
       try {
-        const res = await fetch(`${API_BASE_URL}/questions/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        // TODO: 백엔드 API 연동 - 질문 상세 정보 가져오기
+        // 임시 데이터
+        const mockQuestion = {
+          id: id,
+          title: "요양원 입소 절차에 대해 문의드립니다.",
+          content:
+            "안녕하세요, 어머니(78세)의 요양원 입소를 고려하고 있습니다. 요양등급은 3등급이며, 입소 절차와 필요한 서류에 대해 알고 싶습니다. 또한 대략적인 비용도 알려주시면 감사하겠습니다.",
+          createdAt: "2023-05-15T09:30:00",
+          status: "pending", // pending, answered
+          user: {
+            id: "user123",
+            name: "김철수",
+            email: "user@example.com",
+            phone: "010-1234-5678",
           },
-        })
-        if (!res.ok) throw new Error("불러오기 실패")
-        const data = await res.json()
-        setQuestion(data)
-        setAnswerContent(data.answer?.content || "")
-      } catch (err) {
-        console.error("질문 상세 불러오기 오류:", err)
+          facility: {
+            id: "facility456",
+            name: "행복한 요양원",
+          },
+          answer: null,
+        }
+
+        setQuestion(mockQuestion)
+      } catch (error) {
+        console.error("질문 정보 로딩 오류:", error)
+        alert("질문 정보를 불러오는 중 오류가 발생했습니다.")
       } finally {
         setIsLoading(false)
       }
     }
-    fetchDetail()
-  }, [id, navigate])
 
-  const handleAnswerSubmit = async () => {
-  if (!answerContent.trim()) return alert("답변을 입력해주세요")
-  const token = localStorage.getItem("accessToken")
-  if (!token) return navigate("/login")
-  setIsSubmitting(true)
+    fetchQuestion()
+  }, [id])
 
-  try {
-    const method = question.answer ? "PUT" : "POST"  // ✅ 등록 vs 수정 구분
-
-    const res = await fetch(`${API_BASE_URL}/questions/${id}/answer`, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content: answerContent }),
-    })
-
-    if (!res.ok) throw new Error("등록 실패")
-
-    const data = await res.json()
-    setQuestion({ ...question, answer: data, status: "answered" })
-    alert(question.answer ? "답변이 수정되었습니다." : "답변이 등록되었습니다.")
-    navigate("/admin/questions")
-  } catch (err) {
-    console.error("답변 등록/수정 실패:", err)
-  } finally {
-    setIsSubmitting(false)
+  const handleAnswerChange = (e) => {
+    setAnswer(e.target.value)
   }
-}
+
+  const handleSubmitAnswer = async () => {
+    if (!answer.trim()) {
+      alert("답변 내용을 입력해주세요.")
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      // TODO: 백엔드 API 연동 - 답변 등록 API 호출
+      console.log("답변 등록:", {
+        questionId: id,
+        answer: answer,
+      })
+
+      // 성공 시 상태 업데이트
+      setQuestion({
+        ...question,
+        status: "answered",
+        answer: {
+          content: answer,
+          createdAt: new Date().toISOString(),
+        },
+      })
+
+      alert("답변이 성공적으로 등록되었습니다.")
+    } catch (error) {
+      console.error("답변 등록 오류:", error)
+      alert("답변 등록 중 오류가 발생했습니다. 다시 시도해주세요.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   if (isLoading) {
-    return <Layout><div className="admin-loading">로딩 중...</div></Layout>
+    return <div className="admin-loading">질문 정보를 불러오는 중...</div>
   }
 
   if (!question) {
-    return <Layout><div className="admin-error">질문을 찾을 수 없습니다.</div></Layout>
+    return <div className="admin-error">질문 정보를 찾을 수 없습니다.</div>
   }
 
-  const formatDate = (date) => new Date(date).toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`
+  }
 
   return (
-    <Layout>
-      <div className="admin-inquiries max-w-4xl mx-auto px-4">
-        <div className="admin-header flex items-center gap-2 mb-6">
-          <button onClick={() => navigate("/admin/questions")} className="flex items-center text-gray-800 hover:text-black">
-            <ChevronLeft className="h-5 w-5 mr-1" />
-            <h1 className="text-xl font-semibold">문의 상세</h1>
-          </button>
-        </div>
+    <div className="admin-questions-detail-page">
+      <div className="admin-header">
+        <h1>문의 상세</h1>
+        <Button onClick={() => navigate("/admin/questions")} variant="outline">
+          목록으로 돌아가기
+        </Button>
+      </div>
 
-        <div className="bg-white p-6 rounded shadow">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold">{question.title}</h2>
-            <div className="text-sm text-gray-600">{formatDate(question.createdAt)}</div>
-            <Badge variant={question.answer ? "success" : "warning"} className="mt-2">
-              {question.answer ? "답변 완료" : "미답변"}
+      <div className="question-detail-container">
+        <div className="question-header">
+          <div className="question-title-row">
+            <h2>{question.title}</h2>
+            <Badge variant={question.status === "answered" ? "success" : "warning"}>
+              {question.status === "answered" ? "답변 완료" : "답변 대기"}
             </Badge>
           </div>
-
-          <div className="mb-6">
-            <h3 className="font-semibold mb-1">질문 내용</h3>
-            <p className="p-3 border rounded bg-gray-50 whitespace-pre-wrap">{question.content}</p>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="font-semibold mb-1">문의자</h3>
-            <p>이름: {question.userName || "-"}</p>
-            <p>이메일: {question.userEmail || "-"}</p>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="font-semibold mb-1">답변 작성</h3>
-            <Textarea
-              value={answerContent}
-              onChange={(e) => setAnswerContent(e.target.value)}
-              placeholder="답변 내용을 입력해주세요"
-              rows={6}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button
-              className="bg-blue-500 text-white px-4 py-2 rounded"
-              onClick={handleAnswerSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "등록 중..." : question.answer ? "답변 수정" : "답변 등록"}
-            </Button>
+          <div className="question-meta">
+            <span>작성자: {question.user.name}</span>
+            <span>작성일: {formatDate(question.createdAt)}</span>
+            {question.facility && <span>관련 시설: {question.facility.name}</span>}
           </div>
         </div>
+
+        <div className="question-content">
+          <h3>문의 내용</h3>
+          <div className="content-box">{question.content}</div>
+        </div>
+
+        <div className="user-info">
+          <h3>문의자 정보</h3>
+          <div className="info-grid">
+            <div className="info-item">
+              <span className="info-label">이름</span>
+              <span className="info-value">{question.user.name}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">이메일</span>
+              <span className="info-value">{question.user.email}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">연락처</span>
+              <span className="info-value">{question.user.phone}</span>
+            </div>
+          </div>
+        </div>
+
+        {question.status === "answered" && question.answer ? (
+          <div className="answer-section">
+            <h3>답변 내용</h3>
+            <div className="answer-meta">
+              <span>답변일: {formatDate(question.answer.createdAt)}</span>
+            </div>
+            <div className="content-box">{question.answer.content}</div>
+            <div className="answer-actions">
+              <Button
+                onClick={() => {
+                  setAnswer(question.answer.content)
+                  setQuestion({
+                    ...question,
+                    status: "pending",
+                    answer: null,
+                  })
+                }}
+              >
+                답변 수정하기
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="answer-form">
+            <h3>답변 작성</h3>
+            <Textarea
+              value={answer}
+              onChange={handleAnswerChange}
+              placeholder="문의에 대한 답변을 작성해주세요."
+              rows={6}
+            />
+            <div className="form-actions">
+              <Button onClick={handleSubmitAnswer} disabled={isSubmitting}>
+                {isSubmitting ? "등록 중..." : "답변 등록"}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
-    </Layout>
+    </div>
   )
 }
 
-export default AdminQuestionsDetailPage;
+export default AdminQuestionsDetailPage

@@ -114,20 +114,15 @@
 
 .video-thumbnail {
   position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9; /* ✅ 화면 비율 고정 (16:9) */
+  height: 160px;
   overflow: hidden;
-  background-color: #ddd;
 }
 
 .video-thumbnail img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* ✅ 꽉 채우기, 잘릴 수 있음 */
-  display: block;
+  object-fit: cover;
 }
-
-
 
 .video-duration {
   position: absolute;
@@ -233,11 +228,11 @@
 }
 
 @media (max-width: 640px) {
-  .video-thumbnail {
-    height: 180px;
+  .videos-grid {
+    grid-template-columns: 1fr;
   }
 
-  .video-thumbnail img {
-    object-fit: cover; /* ✅ 그대로 유지 */
+  .video-thumbnail {
+    height: 180px;
   }
 }

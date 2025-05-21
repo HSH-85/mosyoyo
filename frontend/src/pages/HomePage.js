@@ -1,79 +1,66 @@
-"use client";
-import "../styles/HomePage.css";
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import "../styles/HomePage.css"
+import { Link } from "react-router-dom"
+import { useEffect, useState } from "react"
+import {
+  Search,
+  MessageCircle,
+  ChevronRight,
+  ShoppingCart
+} from "lucide-react"
 
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination, Autoplay } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/pagination";
+import { Button } from "../components/ui/Button"
+import FacilityTypeGrid from "../components/FacilityTypeGrid"
+import FaqSection from "../components/FaqSection"
+import PromotionSection from "../components/PromotionSection"
+import NoticeBar from "../components/NoticeBar"
+import VideoSection from "../components/VideoSection"
+import BottomNavigation from "../components/BottomNavigation"
+import logo from "../pages/img/logo.png"
 
-import { Button } from "../components/ui/Button";
-import FacilityTypeGrid from "../components/FacilityTypeGrid";
-import FaqSection from "../components/FaqSection";
-import PromotionSection from "../components/PromotionSection";
-import NoticeBar from "../components/NoticeBar";
-import VideoSection from "../components/VideoSection";
-import BottomNavigation from "../components/BottomNavigation";
-import logo from "../pages/img/logo.png";
-import { useAuth } from "../hooks/use-auth";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const products = [
+  {
+    id: 1,
+    name: "실버워커 (바퀴X) 노인용 보행기 경량 접이식 보행보조기",
+    price: "220,000원",
+    discount: "80%",
+    image: "/images/supportive-stroll.png"
+  },
+  {
+    id: 2,
+    name: "의료용 실버워커(MASSAGE 722F) 노인용 보행기",
+    price: "100,000원",
+    discount: "50%",
+    image: "/images/elderly-woman-using-walker.png"
+  },
+  {
+    id: 3,
+    name: "의료용 워커 노인 보행기 4발 지팡이 실버카 보행보조기",
+    price: "54,000원",
+    discount: "60%",
+    image: "/images/elderly-woman-using-rollator.png"
+  }
+]
 
 function HomePage() {
-  const { isLoggedIn, logout } = useAuth()
-  const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken")
+    setIsLoggedIn(!!token)
+  }, [])
 
   const handleLogout = () => {
     if (window.confirm("로그아웃 하시겠습니까?")) {
-      localStorage.removeItem("accessToken");
-      alert("로그아웃 되었습니다.");
-      navigate("/");
+      localStorage.removeItem("accessToken")
+      setIsLoggedIn(false)
+      alert("로그아웃 되었습니다.")
+      window.location.reload()
     }
-  };
+  }
 
-  const fetchProducts = async () => {
-    try {
-      setLoadingProducts(true);
-      const res = await fetch(`${API_BASE_URL}/products`);
-      if (!res.ok) throw new Error("상품 정보를 불러오지 못했습니다.");
-      const data = await res.json();
-
-      const mapped = data.map((p) => {
-        const price = typeof p.price === "number" ? p.price : parseInt(p.price);
-        const discountPrice =
-          typeof p.discountPrice === "number"
-            ? p.discountPrice
-            : parseInt(p.discountPrice);
-        const discount =
-          price && discountPrice
-            ? Math.round((1 - discountPrice / price) * 100) + "%"
-            : null;
-
-        return {
-          ...p,
-          price: price.toLocaleString("ko-KR"),
-          discount,
-          images: p.images?.[0] || "/images/placeholder.svg",
-        };
-      });
-
-      setProducts(mapped);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const addToCart = (product) => {
+    alert(`${product.name}이(가) 장바구니에 추가되었습니다.`)
+  }
 
   return (
     <div className="home-container">
@@ -82,20 +69,29 @@ function HomePage() {
           <div className="home-logo-area">
             <img src={logo} alt="로고" className="logo" />
           </div>
-          <div className="auth-buttons flex items-center space-x-2">
-            {isLoggedIn ? (
-              <Button variant="ghost" size="sm" className="auth-button" onClick={logout}>
-                로그아웃
-              </Button>
-            ) : (
+          <div className="auth-buttons">
+            {!isLoggedIn ? (
               <>
                 <Link to="/login">
-                  <Button variant="ghost" size="sm" className="auth-button">로그인</Button>
+                  <Button variant="ghost" size="sm" className="auth-button">
+                    로그인
+                  </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button variant="ghost" size="sm" className="auth-button">회원가입</Button>
+                  <Button variant="ghost" size="sm" className="auth-button">
+                    회원가입
+                  </Button>
                 </Link>
               </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="auth-button"
+                onClick={handleLogout}
+              >
+                로그아웃
+              </Button>
             )}
           </div>
         </div>
@@ -104,33 +100,45 @@ function HomePage() {
       <main className="main-content">
         <NoticeBar />
 
-        {/* ✅ 슬라이드 배너 전체 너비 꽉 차도록 수정 */}
-        <div className="hero-section">
-          <Swiper
-            modules={[Pagination, Autoplay]}
-            pagination={{ clickable: true }}
-            spaceBetween={0}
-            slidesPerView={1}
-            loop={true}
-            autoplay={{ delay: 4000, disableOnInteraction: false }}
-          >
-            {[1, 2, 3, 4].map((n) => (
-              <SwiperSlide key={n}>
-                <div className="w-full h-64 sm:h-80 md:h-[400px] lg:h-[500px] overflow-hidden">
-                  <img
-                    src={`/images/사진${n}.png`}
-                    alt={`배너${n}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+        <div className="search-section">
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="시설명, 지역명으로 검색하세요"
+              className="search-input"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <Search className="w-5 h-5" />
+            </div>
+          </div>
         </div>
 
-        {/* 시설 타입 그리드 */}
+        <div className="hero-section">
+          <div className="hero-banner">
+            <div className="hero-text">
+              <div className="hero-tags">
+                <span className="tag yellow">요양 고민</span>
+                <span className="tag pink">상담</span>
+                <span className="tag blue">정보</span>
+              </div>
+              <h1 className="hero-title">함께 소통해요!</h1>
+            </div>
+            <div className="hero-image">
+              <img
+                src="/images/compassionate-elder-care-chat.png"
+                alt="상담 이미지"
+                className="chat-image"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="facility-grid-section">
           <div className="facility-card">
+            <div className="facility-card-header">
+              <MessageCircle className="icon-small" />
+              <h2>전문가에 무료상담하기</h2>
+            </div>
             <FacilityTypeGrid />
           </div>
         </div>
@@ -138,13 +146,13 @@ function HomePage() {
         <VideoSection />
         <PromotionSection />
 
-        {/* 상품 목록 */}
         <div className="products-section">
           <div className="products-card">
             <div className="products-header">
               <h2>인기 제품 추천 상품</h2>
               <Link to="/products" className="more-link">
-                더보기 <ChevronRight className="icon-tiny" />
+                더보기
+                <ChevronRight className="icon-tiny" />
               </Link>
             </div>
 
@@ -158,59 +166,38 @@ function HomePage() {
             </div>
 
             <div className="products-grid">
-              {loadingProducts ? (
-                <div>상품 로딩 중...</div>
-              ) : (
-                products.slice(0, 3).map((product) => {
-                  console.log(product)
-                  const isSoldOut = product.stockQuantity <= 0;
-                  const originalPrice = parseInt(product.price.replace(/,/g, ""));
-                  const discountPrice = parseInt(product.discountPrice);
-                  const discountPercent = product.discount;
-
-                  return (
-                    <Link 
-                      key={product.id} 
-                      to={`/products/${product.id}`} 
-                      className={`product-card relative ${isSoldOut ? "opacity-50 pointer-events-none" : ""}`}
+              {products.map((product) => (
+                <Link
+                  key={product.id}
+                  to={`/products/${product.id}`}
+                  className="product-card"
+                >
+                  <div className="product-image-box">
+                    <img
+                      src={product.image || "/images/placeholder.svg"}
+                      alt={product.name}
+                      className="product-image"
+                    />
+                    <button
+                      className="add-cart-button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        addToCart(product)
+                      }}
                     >
-                      <div className="home-product-image-box">
-                        <img
-                          src={product.images || "/images/placeholder.svg"}
-                          alt={product.name}
-                          className="home-product-image"
-                        />
-                      </div>
-                      <div className="product-info mt-2">
-                        <div className="product-name text-base font-medium text-gray-800 truncate">
-                          {product.name}
-                        </div>
-                        {/* 품절 뱃지 */}
-                        {isSoldOut && (
-                         <span className="absolute top-2 right-2 z-20 bg-red-600 text-white text-sm font-bold uppercase px-3 py-1 rounded-full shadow-md ring-2 ring-white">
-                            품절
-                          </span>
-                        )}
-                        {discountPrice ? (
-                          <>
-                            <div className="text-sm text-gray-400">
-                              <span className="line-through">{originalPrice.toLocaleString("ko-KR")}원</span>
-                              <span className="ml-2 text-blue-600 font-semibold">{discountPercent}</span>
-                            </div>
-                            <div className="text-lg font-bold text-black">
-                              {discountPrice.toLocaleString("ko-KR")}원
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-lg font-bold text-black">
-                            {originalPrice.toLocaleString("ko-KR")}원
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })
-              )}
+                      <ShoppingCart className="icon-tiny" />
+                    </button>
+                  </div>
+                  <div className="product-info">
+                    <div className="product-name">{product.name}</div>
+                    <div className="product-price-info">
+                      <span className="price">{product.price}</span>
+                      <span className="discount">{product.discount}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
@@ -220,7 +207,7 @@ function HomePage() {
 
       <BottomNavigation currentPath="/" />
     </div>
-  );
+  )
 }
 
-export default HomePage;
+export default HomePage

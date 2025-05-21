@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import Skeleton from "../../components/ui/Skeleton";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { FaSearch } from "react-icons/fa";
 import "../../styles/AdminFacilitiesListPage.css";
 
@@ -13,13 +13,6 @@ const formatDate = (dateString) => {
   if (!dateString) return "-";
   const date = new Date(dateString);
   return date.toLocaleDateString("ko-KR");
-};
-
-// 타입 정의
-const typeMap = {
-  요양병원: "nursing_hospital",
-  요양원: "nursing_home",
-  실버타운: "silver_town",
 };
 
 const FacilitiesListPage = () => {
@@ -32,68 +25,55 @@ const FacilitiesListPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const fetchFacilities = async () => {
-      setIsLoading(true);
-
-      try {
-        const query =
-          filterType !== "all"
-            ? `?type=${encodeURIComponent(typeMap[filterType])}`
-            : "";
-
-        const response = await fetch(
-          `http://localhost:8081/api/facility${query}`
-        );
-        const data = await response.json();
-
-        // 타입 값 변환 (영문 -> 한글) 필요하면 여기서 변환
-        const reverseTypeMap = {
-          nursing_hospital: "요양병원",
-          nursing_home: "요양원",
-          silver_town: "실버타운",
-        };
-
-        const converted = data
-          .map((f) => ({
-            ...f,
-            type: reverseTypeMap[f.type] || f.type, // 백엔드 값이 "nursing_home"이면 "요양원"으로 표시
-          }))
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-        setFacilities(converted);
-      } catch (err) {
-        console.error("시설 목록 불러오기 실패:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchFacilities();
-  }, [filterType]);
+    setTimeout(() => {
+      const dummyFacilities = [
+        {
+          id: 1,
+          name: "행복요양원",
+          type: "요양원",
+          address: "서울시 강남구 테헤란로 123",
+          status: "approved",
+          phone: "02-123-4567",
+          rating: 4.2,
+          reviewCount: 10,
+          createdAt: "2023-05-01",
+        },
+        {
+          id: 2,
+          name: "미소요양병원",
+          type: "요양병원",
+          address: "서울시 서초구 서초대로 456",
+          status: "approved",
+          phone: "02-234-5678",
+          rating: 4.0,
+          reviewCount: 8,
+          createdAt: "2023-06-10",
+        },
+        {
+          id: 3,
+          name: "푸른실버타운",
+          type: "실버타운",
+          address: "경기도 고양시 일산동구 중앙로 789",
+          status: "approved",
+          phone: "031-345-6789",
+          rating: 3.8,
+          reviewCount: 12,
+          createdAt: "2023-07-15",
+        },
+      ];
+      setFacilities(dummyFacilities);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
 
   const handleViewDetail = (id) => {
     navigate(`/admin/facilities/${id}`);
-  };
+  }  
 
   const handleEdit = (id) => navigate(`/admin/facilities/${id}/edit`);
-  const handleDelete = async (id) => {
-    if (!window.confirm("정말로 이 시설을 삭제하시겠습니까?")) return;
-
-    try {
-      const response = await fetch(`http://localhost:8081/api/facility/${id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setFacilities((prev) => prev.filter((facility) => facility.id !== id));
-        alert("삭제가 완료되었습니다.");
-      } else {
-        const errorData = await response.json();
-        alert("삭제 실패: " + (errorData.message || "알 수 없는 오류"));
-      }
-    } catch (err) {
-      console.error("삭제 요청 실패:", err);
-      alert("서버 오류로 삭제에 실패했습니다.");
+  const handleDelete = (id) => {
+    if (window.confirm("정말로 이 시설을 삭제하시겠습니까?")) {
+      setFacilities(facilities.filter((facility) => facility.id !== id));
     }
   };
   const handleAddNewFacility = () => navigate("/admin/facilities/new");
@@ -123,6 +103,36 @@ const FacilitiesListPage = () => {
     currentPage * 10
   );
 
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "approved":
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+            승인
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+            대기중
+          </span>
+        );
+      case "rejected":
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+            거부됨
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+            알 수 없음
+          </span>
+        );
+    }
+  };
+  
+
   if (isLoading) {
     return (
       <Layout>
@@ -148,34 +158,45 @@ const FacilitiesListPage = () => {
           </Button>
         </div>
 
+
+
         {/* 필터 영역 */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-4 mb-6">
-          {/* 검색창 */}
-          <div className="relative w-full">
-            <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="시설명 검색"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 bg-white outline-none"
-            />
-          </div>
+  {/* 검색창 */}
+  <div className="relative w-full">
+  <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+  <input
+    type="text"
+    placeholder="시설명 검색"
+    value={searchTerm}
+    onChange={handleSearchChange}
+    className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 bg-white outline-none"
+  />
+</div>
 
-          {/* 필터 셀렉트 */}
-          <div className="w-full sm:w-1/3">
-            <select
-              value={filterType}
-              onChange={handleTypeFilterChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-800 focus:outline-none"
-            >
-              <option value="all">전체</option>
-              <option value="요양원">요양원</option>
-              <option value="요양병원">요양병원</option>
-              <option value="실버타운">실버타운</option>
-            </select>
-          </div>
-        </div>
+
+
+
+
+  {/* 필터 셀렉트 */}
+  <div className="w-full sm:w-1/3">
+    <select
+      value={filterType}
+      onChange={handleTypeFilterChange}
+      className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-800 focus:outline-none"
+    >
+      <option value="all">전체</option>
+      <option value="요양원">요양원</option>
+      <option value="요양병원">요양병원</option>
+      <option value="실버타운">실버타운</option>
+      <option value="방문요양">방문요양</option>
+      <option value="방문간호">방문간호</option>
+      <option value="주야간보호">주야간보호</option>
+    </select>
+  </div>
+</div>
+
+
 
         {/* 테이블 영역 */}
         {currentFacilities.length === 0 ? (
@@ -185,46 +206,73 @@ const FacilitiesListPage = () => {
         ) : (
           <>
             <div className="admin-table-container">
-              <table className="admin-table ">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-4">시설명</th>
-                    <th className="px-6 py-4">유형</th>
-                    <th className="px-6 py-4">주소</th>
-                    <th className="px-6 py-4">등록일</th>
-                    <th className="px-6 py-4">관리</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {currentFacilities.map((facility) => (
-                    <tr key={facility.id} className="h-16">
-                      <td>{facility.name}</td>
-                      <td>{facility.type}</td>
-                      <td>{facility.address}</td>
-                      <td>{formatDate(facility.createdAt)}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-start items-center gap-5">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(facility.id)}
-                          >
-                            <Pencil className="w-5 h-5 text-orange-500" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(facility.id)}
-                          >
-                            <Trash2 className="w-5 h-5 text-red-500" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+  <table className="admin-table ">
+    <thead>
+      <tr>
+        <th className="px-6 py-4">시설명</th>
+        <th className="px-6 py-4">유형</th>
+        <th className="px-6 py-4">주소</th>
+        <th className="px-6 py-4">상태</th>
+        <th className="px-6 py-4">관리</th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-100">
+      {currentFacilities.map((facility) => (
+        <tr key={facility.id} className="h-16">
+          <td>{facility.name}</td>
+          <td>{facility.type}</td>
+          <td>{facility.address}</td>
+          <td>{getStatusBadge(facility.status)}</td>
+          <td className="px-6 py-4">
+  <div className="flex justify-start items-center gap-5">
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => handleViewDetail(facility.id)}
+    >
+      <Eye className="w-5 h-5 text-blue-500" />
+    </Button>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => handleEdit(facility.id)}
+    >
+      <Pencil className="w-5 h-5 text-orange-500" />
+    </Button>
+    {facility.status === "pending" && (
+      <>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleStatusChange(facility.id, "approved")}
+        >
+          <span className="text-green-600 text-xs">승인</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleStatusChange(facility.id, "rejected")}
+        >
+          <span className="text-red-500 text-xs">거부</span>
+        </Button>
+      </>
+    )}
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => handleDelete(facility.id)}
+    >
+      <Trash2 className="w-5 h-5 text-red-500" />
+    </Button>
+  </div>
+</td>
+
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
 
             {totalFilteredPages > 1 && (
               <div className="admin-pagination flex gap-2 mt-4">
