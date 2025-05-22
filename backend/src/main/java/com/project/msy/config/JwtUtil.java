@@ -10,10 +10,11 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String secretKey;
 
-    private final long EXPIRATION = 1000 * 60 * 60 * 24; // 24시간
+    @Value("${JWT_EXPIRATION}")
+    private long EXPIRATION; // 24시간
 
     public String generateToken(String userId, String role) {
         return Jwts.builder()
