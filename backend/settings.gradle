@@ -1,1 +1,14 @@
-rootProject.name = 'msy'
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()       // 이 부분을 추가해 주세요!
+    }
+}
+
+rootProject.name = 'mosyoyo'
