@@ -4,7 +4,9 @@ import com.project.msy.user.entity.User;
 import com.project.msy.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.*;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,15 +17,16 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    // 이메일 또는 username 기반 인증
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = (User) userRepository.findByEmail(username) // 또는 findByUsername
+        // userId 또는 email 기반으로 조회
+        User user = userRepository.findByUserId(username)
+                .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
 
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),  // username
-                user.getPassword(),  // password
+                user.getUserId(),               // 인증 시 내부 식별자로 userId 사용
+                user.getPassword(),             // 암호
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
         );
     }

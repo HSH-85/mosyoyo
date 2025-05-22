@@ -1,77 +1,85 @@
-import { Link } from "react-router-dom"
-import { ChevronRight, Play } from "lucide-react"
+import { useState, useEffect } from 'react'
+import { ChevronRight, Play } from 'lucide-react'
 
-// 비디오 데이터
-// 백엔드 개발자 참고: GET /api/videos/featured API 필요
-const videos = [
-  {
-    id: 1,
-    title: "요양시설 종류별 특징 알아보기",
-    duration: "5:30",
-    thumbnail: "/images/welfare-facilities-types-thumbnail.png",
-    url: "/videos/1",
-  },
-  {
-    id: 2,
-    title: "요양시설 이용 방법 및 절차",
-    duration: "7:15",
-    thumbnail: "/images/senior-facility-usage-thumbnail.png",
-    url: "/videos/2",
-  },
-  {
-    id: 3,
-    title: "실버타운 vs 요양원 vs 양로원 차이점",
-    duration: "6:45",
-    thumbnail: "/images/senior-housing-differences-thumbnail.png",
-    url: "/videos/3",
-  },
-  {
-    id: 4,
-    title: "노인복지 정책 및 지원금 안내",
-    duration: "8:20",
-    thumbnail: "/images/senior-welfare-presentation-thumbnail.png",
-    url: "/videos/4",
-  },
-]
+// 환경변수로 API 베이스 URL 설정
+const API_BASE_URL = process.env.REACT_APP_API_URL
 
 function VideoSection() {
+  const [videos, setVideos] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(`${API_BASE_URL}/videos`)
+        if (!res.ok) throw new Error('영상 정보를 불러오지 못했습니다.')
+        const data = await res.json()
+        // 최신 순으로 정렬 후 최대 4개만 저장
+        const latestFour = data
+          .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+          .slice(0, 4)
+        setVideos(latestFour)
+      } catch (error) {
+        console.error('영상 불러오기 오류:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchVideos()
+  }, [])
+
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-6">
       <div className="bg-white rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-medium">영상으로 만나는 요양정보</h2>
-          <Link to="/videos" className="text-xs text-gray-500 flex items-center">
+          <a href="/videos" className="text-xs text-gray-500 flex items-center">
             더보기 <ChevronRight className="h-3 w-3" />
-          </Link>
+          </a>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {videos.map((video) => (
-            <Link key={video.id} to={video.url} className="block">
-              <div className="relative rounded-lg overflow-hidden">
-                <img
-                  src={video.thumbnail || "/placeholder.svg"}
-                  alt={video.title}
-                  className="w-full aspect-video object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                  <div className="bg-white bg-opacity-80 rounded-full p-2">
-                    <Play className="h-4 w-4 text-blue-500" />
+        {loading ? (
+          <div className="loading-spinner text-center py-8">로딩 중…</div>
+        ) : videos.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {videos.map((video) => (
+              <a
+                key={video.videoId}
+                href={`https://www.youtube.com/watch?v=${video.videoId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <div className="relative rounded-lg overflow-hidden">
+                  <img
+                    src={video.thumbnailUrl}
+                    alt={video.title}
+                    className="w-full aspect-video object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                    <div className="bg-white bg-opacity-80 rounded-full p-2">
+                      <Play className="h-4 w-4 text-blue-500" />
+                    </div>
                   </div>
                 </div>
-                <div className="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
-                  {video.duration}
+                <div className="mt-2">
+                  <p className="text-xs font-medium line-clamp-2">{video.title}</p>
                 </div>
-              </div>
-              <div className="mt-2">
-                <p className="text-xs font-medium line-clamp-2">{video.title}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state text-center py-8 text-gray-500">
+            <div className="empty-icon">
+              <Play className="h-6 w-6" />
+            </div>
+            <h2 className="text-sm font-medium mt-2">영상이 없습니다</h2>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-export default VideoSection
+export default VideoSection;

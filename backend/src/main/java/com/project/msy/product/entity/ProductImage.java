@@ -25,6 +25,7 @@ public class ProductImage {
     @Column(name = "image_url", columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 
+    @Builder.Default
     @Column(name = "is_main", nullable = false)
     private Boolean isMain = false;
 }

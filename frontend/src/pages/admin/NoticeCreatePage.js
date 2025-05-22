@@ -1,13 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import React, { useState } from "react"
+import { useNavigate, Link } from "react-router-dom"
+import { ChevronLeft } from "lucide-react"
+
 import Layout from "../../components/Layout"
 import { Button } from "../../components/ui/Button"
 import { Input } from "../../components/ui/Input"
 import { Textarea } from "../../components/ui/Textarea"
 import { Label } from "../../components/ui/Label"
 import "../../styles/AdminNoticeCreatePage.css"
+
 
 
 
@@ -43,28 +46,49 @@ const NoticeCreatePage = () => {
     if (!formData.content.trim()) newErrors.content = "내용을 입력해주세요"
     return newErrors
   }
+const handleSubmit = async (e) => {
+  e.preventDefault()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    const validationErrors = validateForm()
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      console.log("공지사항 등록 요청:", formData)
-      alert("공지사항이 성공적으로 등록되었습니다.")
-      navigate("/admin/notices")
-    } catch (error) {
-      console.error("공지사항 등록 오류:", error)
-      alert("공지사항 등록 중 오류가 발생했습니다. 다시 시도해주세요.")
-    } finally {
-      setIsSubmitting(false)
-    }
+  const validationErrors = validateForm()
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors)
+    return
   }
+
+  setIsSubmitting(true)
+
+  try {
+    const token = localStorage.getItem("accessToken")
+
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/notices`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: formData.title,
+        content: formData.content,
+        isImportant: formData.isImportant,
+        isVisible: formData.isVisible,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`서버 응답 오류: ${errorText}`)
+    }
+
+    alert("공지사항이 성공적으로 등록되었습니다.")
+    navigate("/notices")
+  } catch (error) {
+    console.error("공지사항 등록 오류:", error)
+    alert("공지사항 등록 중 오류가 발생했습니다. 다시 시도해주세요.")
+  } finally {
+    setIsSubmitting(false)
+  }
+}
+
 
   const handleCancel = () => {
     if (window.confirm("작성 중인 내용이 저장되지 않습니다. 취소하시겠습니까?")) {
@@ -75,12 +99,19 @@ const NoticeCreatePage = () => {
   return (
     <Layout>
       <div className="admin-notice-create max-w-6xl mx-auto px-4">
-        <div className="admin-header">
-          <h1>공지사항 작성</h1>
-          <Button onClick={() => navigate("/notices")} variant="outline">
-              목록으로 돌아가기
-            </Button>
-        </div>
+     <div className="admin-header flex items-center justify-between mb-6">
+         <div className="flex items-center">
+           <Link
+             to="/notices"
+             className="flex items-center text-gray-600 hover:text-gray-800"
+           >
+             <ChevronLeft className="h-5 w-5" />
+          
+           </Link>
+           <h1 className="ml-4 text-2xl font-semibold">공지사항 작성</h1>
+         </div>
+        
+       </div>
 
         <form onSubmit={handleSubmit} className="notice-form">
           <div className="form-group">
@@ -110,29 +141,7 @@ const NoticeCreatePage = () => {
             {errors.content && <p className="error-text">{errors.content}</p>}
           </div>
 
-          <div className="form-options">
-            <div className="form-checkbox">
-              <input
-                type="checkbox"
-                id="isImportant"
-                name="isImportant"
-                checked={formData.isImportant}
-                onChange={handleChange}
-              />
-              <Label htmlFor="isImportant">중요 공지로 표시</Label>
-            </div>
-
-            <div className="form-checkbox">
-              <input
-                type="checkbox"
-                id="isVisible"
-                name="isVisible"
-                checked={formData.isVisible}
-                onChange={handleChange}
-              />
-              <Label htmlFor="isVisible">즉시 게시</Label>
-            </div>
-          </div>
+         
 
           <div className="form-actions">
             <button

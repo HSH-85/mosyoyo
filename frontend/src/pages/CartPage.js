@@ -1,28 +1,126 @@
+// src/pages/CartPage.jsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom"
-import { useCart } from "../hooks/use-cart"
 import BottomNavigation from "../components/BottomNavigation"
 import { Button } from "../components/ui/Button"
-import { ChevronLeft } from "lucide-react" // ✅ 추가
+import { ChevronLeft } from "lucide-react"
 import "../styles/CartPage.css"
+import { useNavigate } from "react-router-dom"
+
+
+const API_BASE_URL = process.env.REACT_APP_API_URL
 
 /**
  * 장바구니 페이지 컴포넌트
- *
- * @returns {JSX.Element}
  */
 function CartPage() {
-  const { cart, removeFromCart, updateQuantity } = useCart()
+  const [cart, setCart] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const navigate = useNavigate()
+   const alertedRef = useRef(false); // ✅ 중복 방지
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [])
+
+  // 백엔드에서 장바구니 아이템 가져오기
+ useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+
+    if (!token) {
+      if (!alertedRef.current) {
+        alert("로그인 후 이용 가능합니다.");
+        alertedRef.current = true;
+        navigate("/");
+      }
+      return;
+    }
+
+    const fetchCart = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch(`${API_BASE_URL}/cart`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error("장바구니 로딩 실패");
+        const data = await res.json();
+        setCart(
+          data.map((item) => ({
+            id: item.productId,
+            name: item.productName,
+            image: item.imageUrls?.[0] || "/placeholder.svg",
+            quantity: item.quantity,
+            price: item.unitPrice.toLocaleString("ko-KR") + "원",
+          }))
+        );
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCart();
+  }, [navigate]);
+
+
+  // 장바구니 항목 삭제
+  const removeFromCart = async (productId) => {
+    try {
+      const token = localStorage.getItem("accessToken")
+      const res = await fetch(`${API_BASE_URL}/cart/${productId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error("삭제 실패")
+      setCart(prev => prev.filter(item => item.id !== productId))
+    } catch (err) {
+      console.error(err)
+      alert("삭제 중 오류가 발생했습니다.")
+    }
+  }
+
+  // 수량 변경
+  const updateQuantity = async (productId, newQty) => {
+    try {
+      const token = localStorage.getItem("accessToken")
+      const res = await fetch(`${API_BASE_URL}/cart`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ productId, quantity: newQty })
+      })
+      if (!res.ok) throw new Error("수량 변경 실패")
+      setCart(prev =>
+        prev.map(item =>
+          item.id === productId ? { ...item, quantity: newQty } : item
+        )
+      )
+    } catch (err) {
+      console.error(err)
+      alert("수량 변경 중 오류가 발생했습니다.")
+    }
+  }
+
+  
+ const clearCart = async () => {
+     try {
+       const token = localStorage.getItem("accessToken")
+       const res = await fetch(`${API_BASE_URL}/cart`, {
+         method: "DELETE",
+         headers: { Authorization: `Bearer ${token}` }
+       })
+       if (!res.ok) throw new Error("전체 삭제 실패")
+       setCart([])   // 화면에서 모두 지워줍니다
+     } catch (err) {
+       console.error(err)
+       alert("전체 삭제 중 오류가 발생했습니다.")
+     }
+   }
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => {
@@ -35,20 +133,43 @@ function CartPage() {
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원"
   }
 
-  const handlePayment = () => {
-    alert("카카오페이 결제 기능은 현재 개발 중입니다.")
-  }
+  const handlePayment = async () => {
+    try {
+      const token   = localStorage.getItem("accessToken");
+      const orderId = Date.now();                      // 예시: 타임스탬프로 임시 주문 ID 생성
+      const itemName    = `장바구니상품 ${cart.length}건`;
+      const totalAmount = calculateTotal();
 
-  const handleClearAll = () => {
-    alert("전체 삭제 기능은 현재 개발 중입니다.")
+      // 백엔드 ready API 호출
+      const res = await fetch(
+        `${API_BASE_URL}/payment/kakao/ready` +
+          `?orderId=${orderId}` +
+          `&itemName=${encodeURIComponent(itemName)}` +
+          `&totalAmount=${totalAmount}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("결제 준비 실패");
+      const { redirectUrl, tid } = await res.json();
+      
+      localStorage.setItem("kakaoTid", tid);
+      
+      // 카카오페이 페이지로 이동
+      window.location.href = redirectUrl;
+    } catch (err) {
+      console.error(err);
+     alert("결제 요청 중 오류가 발생했습니다.");
+    }
   }
-
   return (
     <div className="cart-page">
-      {/* 헤더 */}
       <header className="page-header">
         <div className="container">
-          {/* ✅ 여기 수정 */}
           <Link to="/" className="mr-2">
             <ChevronLeft className="h-6 w-6 text-gray-600" />
           </Link>
@@ -56,7 +177,6 @@ function CartPage() {
         </div>
       </header>
 
-      {/* 메인 콘텐츠 */}
       <main className="page-content">
         <div className="container">
           {isLoading ? (
@@ -64,27 +184,31 @@ function CartPage() {
               <div className="spinner"></div>
             </div>
           ) : cart.length > 0 ? (
-            <div>
+            <>
               <div className="list-header">
                 <h2>장바구니 ({cart.length})</h2>
-                <Button variant="ghost" size="sm" className="clear-all-button" onClick={handleClearAll}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="clear-all-button"
+                  onClick={clearCart}
+                >
                   전체 삭제
                 </Button>
               </div>
 
               <div className="cart-items">
-                {cart.map((product) => (
+                {cart.map(product => (
                   <div key={product.id} className="product-card">
                     <div className="product-content">
                       <div className="product-image">
-                        <img src={product.image || "/placeholder.svg"} alt={product.name} />
+                        <img src={product.image} alt={product.name} />
                       </div>
                       <div className="product-info">
                         <Link to={`/products/${product.id}`}>
                           <h3>{product.name}</h3>
                         </Link>
                         <p className="product-price">{product.price}</p>
-                        {product.discount && <p className="product-discount">할인: {product.discount}</p>}
                       </div>
                     </div>
 
@@ -94,14 +218,14 @@ function CartPage() {
                           className="quantity-button"
                           onClick={() => updateQuantity(product.id, Math.max(1, product.quantity - 1))}
                         >
-                          <i className="icon-minus"></i>
+                          -
                         </button>
                         <span className="quantity-value">{product.quantity}</span>
                         <button
                           className="quantity-button"
                           onClick={() => updateQuantity(product.id, product.quantity + 1)}
                         >
-                          <i className="icon-plus"></i>
+                          +
                         </button>
                       </div>
                       <Button
@@ -110,7 +234,6 @@ function CartPage() {
                         className="delete-button"
                         onClick={() => removeFromCart(product.id)}
                       >
-                        <i className="icon-trash"></i>
                         삭제
                       </Button>
                     </div>
@@ -118,7 +241,6 @@ function CartPage() {
                 ))}
               </div>
 
-              {/* 주문 요약 */}
               <div className="order-summary">
                 <h3>주문 요약</h3>
                 <div className="summary-items">
@@ -136,7 +258,7 @@ function CartPage() {
                   <span className="total-price">{formatPrice(calculateTotal())}</span>
                 </div>
               </div>
-            </div>
+            </>
           ) : (
             <div className="empty-state">
               <div className="empty-icon">
@@ -147,26 +269,25 @@ function CartPage() {
               <h2 className="empty-title">장바구니가 비어있습니다</h2>
               <p className="empty-description">필요한 제품을 장바구니에 담아보세요.</p>
               <Link to="/products">
-                <button className="empty-search-button">
-                  제품 쇼핑하기
-                </button>
+                <button className="empty-search-button">제품 쇼핑하기</button>
               </Link>
             </div>
           )}
         </div>
       </main>
 
-      {/* 결제 버튼 */}
       {!isLoading && cart.length > 0 && (
         <div className="payment-bar">
-          <Button onClick={handlePayment} className="payment-button">
-            <i className="icon-credit-card"></i>
-            카카오페이로 결제하기
-          </Button>
-        </div>
+  <div className="payment-inner">
+    <Button onClick={handlePayment} className="payment-button">
+      카카오페이로 결제하기
+    </Button>
+  </div>
+</div>
+
+   
       )}
 
-      {/* 하단 네비게이션 */}
       <BottomNavigation />
     </div>
   )

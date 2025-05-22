@@ -1,8 +1,8 @@
 package com.project.msy.product.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +24,8 @@ public class ProductOrigin {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Builder.Default
+    @JsonIgnore
     @OneToMany(mappedBy = "origin", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> products = new ArrayList<>();
 }

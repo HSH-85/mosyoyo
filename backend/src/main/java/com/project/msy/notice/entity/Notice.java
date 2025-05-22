@@ -32,4 +32,15 @@ public class Notice {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+
+    @Column(nullable = false)
+    private boolean isVisible;
+
+    @Column(nullable = false)
+    private int views = 0;
+
+
+
+
 }

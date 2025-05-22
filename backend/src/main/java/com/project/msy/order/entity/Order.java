@@ -1,5 +1,6 @@
 package com.project.msy.order.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.msy.user.entity.User;
 import com.project.msy.product.entity.Product;
 import jakarta.persistence.*;
@@ -25,6 +26,7 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)

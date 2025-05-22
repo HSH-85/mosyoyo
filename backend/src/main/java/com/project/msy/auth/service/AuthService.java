@@ -50,7 +50,8 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user.getUserId(), user.getRole().name());
         boolean isAdmin = user.getRole() == Role.ADMIN;  // Role이 enum이라면 ADMIN 값 확인
+        Long userId = user.getId();
 
-        return new LoginResponse(token, isAdmin);
+        return new LoginResponse(token, isAdmin,userId);
     }
 }
